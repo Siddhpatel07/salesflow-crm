@@ -1,0 +1,286 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useForm, useFieldArray } from 'react-hook-form'; // 👈 Imported useFieldArray
+import { ArrowLeft, Save, Building2, User, Plus, Trash2 } from 'lucide-react'; // 👈 Added dynamic icons
+
+export default function AddLedger() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const ledgerData = location.state?.ledgerData;
+  const isEditing = Boolean(ledgerData);
+  const [status, setStatus] = useState('');
+
+  const { register, handleSubmit, formState: { errors }, reset, control } = useForm({
+    defaultValues: {
+      partyName: ledgerData?.partyName || '',
+      partyType: ledgerData?.type || '',
+      address: ledgerData?.address || '',
+      state: ledgerData?.state || '',
+      pinCode: ledgerData?.pin || '', 
+      city: ledgerData?.city || '',
+      email: ledgerData?.email || '',
+      whatsapp: ledgerData?.whatsapp || '',
+      contactName: ledgerData?.contactName || '',
+      designation: ledgerData?.designation || '',
+      branchName: ledgerData?.branchName || '',
+      branchAddress: ledgerData?.branchAddress || '',
+      branchState: ledgerData?.branchState || '',
+      branchPincode: ledgerData?.branchPincode || '',
+      // 👇 Dynamic Default Array
+      mobileNumbers: ledgerData?.mobileNumbers?.length ? ledgerData.mobileNumbers : [{ number: '' }] 
+    }
+  });
+
+  // 👇 The magical React Hook that handles dynamic inputs
+  const { fields: mobileFields, append: appendMobile, remove: removeMobile } = useFieldArray({
+    control,
+    name: "mobileNumbers"
+  });
+
+  useEffect(() => {
+    if (ledgerData) {
+      reset({ 
+        ...ledgerData, 
+        pinCode: ledgerData.pin,
+        mobileNumbers: ledgerData.mobileNumbers?.length ? ledgerData.mobileNumbers : [{ number: '' }]
+      }); 
+    }
+  }, [ledgerData, reset]);
+
+  const onSubmit = async (data) => {
+    setStatus(isEditing ? 'Updating in Tally...' : 'Syncing to Tally...');
+    const apiUrl = isEditing ? 'http://localhost:5000/api/tally/edit' : 'http://localhost:5000/api/tally/sync';
+    const apiMethod = isEditing ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: apiMethod,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: data.partyName,
+          company: data.partyName,
+          email: data.email || '',
+          partyType: data.partyType,
+          address: data.address || '',
+          state: data.state || '',
+          pinCode: data.pinCode || '',
+          branchName: data.branchName || '',
+          branchAddress: data.branchAddress || '',
+          branchState: data.branchState || '',
+          branchPincode: data.branchPincode || '',
+          whatsapp: data.whatsapp || '',
+          mobileNumbers: data.mobileNumbers || [] // 👈 Send the array to Node
+        })
+      });
+
+      if (response.ok) {
+        const existingLedgers = JSON.parse(localStorage.getItem('salesflow_ledgers')) || [];
+
+        if (isEditing) {
+          const updatedLedgers = existingLedgers.map((ledger) =>
+            ledger.id === ledgerData.id ? {
+              ...ledger,
+              type: data.partyType,
+              address: data.address || '-',
+              state: data.state || '',
+              pin: data.pinCode || '-',
+              city: data.city || '',
+              email: data.email || '-',
+              whatsapp: data.whatsapp || '-',
+              contactName: data.contactName || '',
+              designation: data.designation || '',
+              branchName: data.branchName || '',
+              branchAddress: data.branchAddress || '',
+              branchState: data.branchState || '',
+              branchPincode: data.branchPincode || '',
+              mobileNumbers: data.mobileNumbers, // 👈 Save to local storage
+              updated: new Date().toLocaleDateString('en-GB')
+            } : ledger
+          );
+          localStorage.setItem('salesflow_ledgers', JSON.stringify(updatedLedgers));
+          setStatus('✅ Ledger successfully updated in Tally!');
+        } else {
+          existingLedgers.push({
+            id: `LDG-${Date.now()}`,
+            partyName: data.partyName,
+            type: data.partyType,
+            address: data.address || '-',
+            state: data.state || '',
+            pin: data.pinCode || '-',
+            city: data.city || '',
+            email: data.email || '-',
+            whatsapp: data.whatsapp || '-',
+            contactName: data.contactName || '',
+            designation: data.designation || '',
+            branchName: data.branchName || '',
+            branchAddress: data.branchAddress || '',
+            branchState: data.branchState || '',
+            branchPincode: data.branchPincode || '',
+            mobileNumbers: data.mobileNumbers, // 👈 Save to local storage
+            updated: new Date().toLocaleDateString('en-GB'),
+            by: 'Admin User',
+            sync: 'Success'
+          });
+          localStorage.setItem('salesflow_ledgers', JSON.stringify(existingLedgers));
+          setStatus('✅ Ledger successfully synced to Tally!');
+        }
+        setTimeout(() => navigate('/ledgers'), 1500);
+      } else {
+        setStatus(`❌ Tally Error`);
+      }
+    } catch (error) {
+      setStatus('❌ Failed to connect to Node.js server.');
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+      <div className="relative flex items-center justify-center py-2">
+        <button onClick={() => navigate('/ledgers')} className="absolute left-0 flex items-center text-sm text-slate-500 hover:text-emerald-600 transition-colors">
+          <ArrowLeft size={16} className="mr-1" /> Back to Ledgers
+        </button>
+        <h1 className="text-3xl font-bold text-slate-800">{isEditing ? 'Edit Ledger' : 'Add New Ledger'}</h1>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        
+        {/* --- BASIC DETAILS --- */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+          <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
+            <Building2 className="text-emerald-600 mr-2" size={20} />
+            <h2 className="text-lg font-semibold text-slate-800">Basic Details</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="col-span-2 md:col-span-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Party Name *</label>
+              <input {...register("partyName", { required: "Required" })} disabled={isEditing} className={`w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500 ${isEditing ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : ''}`} />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Ledger / Party Type *</label>
+              <select {...register("partyType", { required: "Required" })} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500 bg-white">
+                <option value="Sundry Debtors">Sundry Debtors (Customer)</option>
+                <option value="Sundry Creditors">Sundry Creditors (Supplier)</option>
+              </select>
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Registered Address</label>
+              <textarea {...register("address")} rows="2" className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
+              <select {...register("state")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500 bg-white">
+                <option value="Gujarat">Gujarat</option>
+                <option value="Maharashtra">Maharashtra</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Pin Code</label>
+              <input {...register("pinCode")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" />
+            </div>
+          </div>
+        </div>
+
+        {/* --- CONTACT INFO & DYNAMIC MOBILE NUMBERS --- */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+          <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
+            <User className="text-emerald-600 mr-2" size={20} />
+            <h2 className="text-lg font-semibold text-slate-800"> Primary Contact Information</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Contact Name</label>
+              <input {...register("contactName")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Designation</label>
+              <input {...register("designation")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+              <input type="email" {...register("email")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">WhatsApp Number</label>
+              <input {...register("whatsapp")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" />
+            </div>
+
+            {/* DYNAMIC FIELD ARRAY FOR MOBILE NUMBERS */}
+            <div className="col-span-1 md:col-span-2 mt-2 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-semibold text-slate-700">Mobile Numbers</label>
+                <button 
+                  type="button" 
+                  onClick={() => appendMobile({ number: '' })} 
+                  className="text-xs text-emerald-600 hover:text-emerald-800 flex items-center font-bold"
+                >
+                  <Plus size={14} className="mr-1" /> Add Another Mobile
+                </button>
+              </div>
+              
+              <div className="space-y-3">
+                {mobileFields.map((field, index) => (
+                  <div key={field.id} className="flex items-center space-x-2">
+                    <input 
+                      {...register(`mobileNumbers.${index}.number`)} 
+                      className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500 bg-white" 
+                      placeholder={index === 0 ? "Primary Mobile Number" : `Secondary Mobile ${index}`} 
+                    />
+                    {index > 0 && (
+                      <button 
+                        type="button" 
+                        onClick={() => removeMobile(index)} 
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                        title="Remove Number"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* --- SECONDARY ADDRESS --- */}
+        <div className="mt-6 border-t pt-4">
+          <h3 className="text-lg font-semibold text-slate-700 mb-4">Secondary Address (Optional)</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Branch Name</label>
+              <input {...register("branchName")} className="w-full border border-slate-300 p-2 rounded outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Branch Address</label>
+              <input {...register("branchAddress")} className="w-full border border-slate-300 p-2 rounded outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Branch State</label>
+              <input {...register("branchState")} className="w-full border border-slate-300 p-2 rounded outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Branch Pincode</label>
+              <input {...register("branchPincode")} className="w-full border border-slate-300 p-2 rounded outline-none focus:border-emerald-500" />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-medium text-emerald-600">{status}</div>
+          <button type="submit" className="flex items-center bg-emerald-600 text-white px-6 py-2.5 rounded-md hover:bg-emerald-700 font-medium cursor-pointer">
+            <Save size={18} className="mr-2" />
+            {isEditing ? 'Update Ledger' : 'Save Ledger'}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  );
+}
