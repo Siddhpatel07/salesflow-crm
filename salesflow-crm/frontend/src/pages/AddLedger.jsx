@@ -27,7 +27,6 @@ export default function AddLedger() {
       branchState: ledgerData?.branchState || '',
       branchPincode: ledgerData?.branchPincode || '',
       mobileNumbers: ledgerData?.mobileNumbers?.length ? ledgerData.mobileNumbers : [{ number: '' }],
-      // 👇 New Array for Multiple Bank Details
       bankDetails: ledgerData?.bankDetails?.length ? ledgerData.bankDetails : [{ bankName: '', accountNumber: '', ifscCode: '' }]
     }
   });
@@ -37,7 +36,6 @@ export default function AddLedger() {
     name: "mobileNumbers"
   });
 
-  // 👇 Dynamic Form Array logic for Bank Details
   const { fields: bankFields, append: appendBank, remove: removeBank } = useFieldArray({
     control,
     name: "bankDetails"
@@ -55,6 +53,22 @@ export default function AddLedger() {
   }, [ledgerData, reset]);
 
   const onSubmit = async (data) => {
+    //  NEW: DUPLICATE NAME VALIDATION 
+    const existingLedgers = JSON.parse(localStorage.getItem('salesflow_ledgers')) || [];
+    
+    const isDuplicate = existingLedgers.some((ledger) => {
+      if (isEditing && ledger.id === ledgerData.id) {
+        return false;
+      }
+      return ledger.partyName.toLowerCase().trim() === data.partyName.toLowerCase().trim();
+    });
+
+    if (isDuplicate) {
+      alert(`⚠️ A ledger with the name "${data.partyName}" already exists!\n\nPlease choose a different name.`);
+      return; 
+    }
+    //  END OF VALIDATION 
+
     setStatus(isEditing ? 'Updating in Tally...' : 'Syncing to Tally...');
     const apiUrl = isEditing ? 'http://localhost:5000/api/tally/edit' : 'http://localhost:5000/api/tally/sync';
     const apiMethod = isEditing ? 'PUT' : 'POST';
@@ -77,14 +91,11 @@ export default function AddLedger() {
           branchPincode: data.branchPincode || '',
           whatsapp: data.whatsapp || '',
           mobileNumbers: data.mobileNumbers || [],
-          // 👇 Sending the array of banks to server.js
           bankDetails: data.bankDetails || []
         })
       });
 
       if (response.ok) {
-        const existingLedgers = JSON.parse(localStorage.getItem('salesflow_ledgers')) || [];
-
         const newLedgerItem = {
           id: isEditing ? ledgerData.id : `LDG-${Date.now()}`,
           partyName: data.partyName,
@@ -102,7 +113,7 @@ export default function AddLedger() {
           branchState: data.branchState || '',
           branchPincode: data.branchPincode || '',
           mobileNumbers: data.mobileNumbers, 
-          bankDetails: data.bankDetails, // Save array locally
+          bankDetails: data.bankDetails, 
           updated: new Date().toLocaleDateString('en-GB'),
           by: 'Admin User',
           sync: 'Success'
@@ -127,6 +138,7 @@ export default function AddLedger() {
       setStatus('❌ Failed to connect to Node.js server.');
     }
   };
+
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
