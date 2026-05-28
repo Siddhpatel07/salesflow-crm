@@ -9,20 +9,33 @@ const buildTallyPayload = (action, reqBody) => {
   const { 
     name, email, address, state, pincode, 
     branchName, branchAddress, branchState, branchPincode, 
-    mobileNumbers, partyType, whatsapp 
+    mobileNumbers, partyType, whatsapp,
+    //  NEW BANK FIELDS FROM CRM FRONTEND 
+    bankName, ifscCode, accountNumber 
   } = reqBody;
 
   const primaryMobile = mobileNumbers && mobileNumbers.length > 0 ? mobileNumbers[0].number : "";
   
-  // EXACT SENIOR FORMAT - Without any .list suffix
+  // Exact Senior Format Mapping for Contact Details
   const contactDetailsArray = mobileNumbers && mobileNumbers.length > 0 
     ? mobileNumbers.map((m, index) => ({ 
         name: index === 0 ? "Primary Contact" : `Secondary ${index}`, 
-        phonenumber: m.number, // Using 'phonenumber' prevents the overwrite bug
+        phonenumber: m.number, 
         countryisdcode: "+91",
         isdefaultwhatsappnum: index === 0 ? "Yes" : "No"
       })) 
     : [];
+
+  //  EXACT SENIOR FORMAT FOR BANK DETAILS (Single Account for now) 
+  const paymentDetailsArray = bankName ? [{
+    transactionname: "Primary",
+    bankname: bankName,
+    ifscode: ifscCode || "",
+    accountnumber: accountNumber || "",
+    paymentfavouring: name, // Default to party name
+    setasdefault: "Yes",
+    defaulttransactiontype: "Inter Bank Transfer"
+  }] : [];
 
   return {
     static_variables: [
@@ -44,8 +57,11 @@ const buildTallyPayload = (action, reqBody) => {
         countryname: "India",
         pincode: pincode || "",
         
-        // 🚀 EXACT KEYS AS PER SENIOR'S JSON (NO .list) 🚀
+        // Contact Details List (Senior Format Verified)
         contactdetails: contactDetailsArray,
+        
+        //  EXACT BANK PAYLOAD FROM SENIOR'S FILE 
+        paymentdetails: paymentDetailsArray,
         
         hasmultipleaddresses: "Yes",
         
@@ -71,10 +87,10 @@ const buildTallyPayload = (action, reqBody) => {
 
 // --- CREATE ROUTE ---
 app.post('/api/tally/sync', async (req, res) => {
-  console.log(`📥 [CREATE] Data received from React: ${req.body.name}`);
+  console.log(`[CREATE] Data received from React: ${req.body.name}`);
   const jsonPayload = buildTallyPayload("Create", req.body);
   
-  console.log("🚀 --- EXACT JSON GOING TO TALLY --- 🚀");
+  console.log("--- EXACT JSON GOING TO TALLY ---");
   console.log(JSON.stringify(jsonPayload, null, 2));
   console.log("-----------------------------------------");
 
@@ -120,4 +136,4 @@ app.put('/api/tally/edit', async (req, res) => {
   }
 });
 
-app.listen(5000, () => console.log('✅ Server running on port 5000'));
+app.listen(5000, () => console.log('Server running on port 5000'));

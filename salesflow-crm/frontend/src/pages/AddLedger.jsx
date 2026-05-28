@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useForm, useFieldArray } from 'react-hook-form'; // 👈 Imported useFieldArray
-import { ArrowLeft, Save, Building2, User, Plus, Trash2 } from 'lucide-react'; // 👈 Added dynamic icons
+import { useForm, useFieldArray } from 'react-hook-form'; 
+import { ArrowLeft, Save, Building2, User, Plus, Trash2, Landmark } from 'lucide-react'; // Added Landmark for Bank
 
 export default function AddLedger() {
   const navigate = useNavigate();
@@ -26,12 +26,14 @@ export default function AddLedger() {
       branchAddress: ledgerData?.branchAddress || '',
       branchState: ledgerData?.branchState || '',
       branchPincode: ledgerData?.branchPincode || '',
-      // 👇 Dynamic Default Array
+      // 👇 New Bank Fields
+      bankName: ledgerData?.bankName || '',
+      ifscCode: ledgerData?.ifscCode || '',
+      accountNumber: ledgerData?.accountNumber || '',
       mobileNumbers: ledgerData?.mobileNumbers?.length ? ledgerData.mobileNumbers : [{ number: '' }] 
     }
   });
 
-  // 👇 The magical React Hook that handles dynamic inputs
   const { fields: mobileFields, append: appendMobile, remove: removeMobile } = useFieldArray({
     control,
     name: "mobileNumbers"
@@ -42,6 +44,9 @@ export default function AddLedger() {
       reset({ 
         ...ledgerData, 
         pinCode: ledgerData.pin,
+        bankName: ledgerData.bankName || '',
+        ifscCode: ledgerData.ifscCode || '',
+        accountNumber: ledgerData.accountNumber || '',
         mobileNumbers: ledgerData.mobileNumbers?.length ? ledgerData.mobileNumbers : [{ number: '' }]
       }); 
     }
@@ -69,7 +74,11 @@ export default function AddLedger() {
           branchState: data.branchState || '',
           branchPincode: data.branchPincode || '',
           whatsapp: data.whatsapp || '',
-          mobileNumbers: data.mobileNumbers || [] // 👈 Send the array to Node
+          mobileNumbers: data.mobileNumbers || [],
+          // 👇 Sending Bank Details to server.js
+          bankName: data.bankName,
+          ifscCode: data.ifscCode,
+          accountNumber: data.accountNumber
         })
       });
 
@@ -93,7 +102,10 @@ export default function AddLedger() {
               branchAddress: data.branchAddress || '',
               branchState: data.branchState || '',
               branchPincode: data.branchPincode || '',
-              mobileNumbers: data.mobileNumbers, // 👈 Save to local storage
+              bankName: data.bankName,
+              ifscCode: data.ifscCode,
+              accountNumber: data.accountNumber,
+              mobileNumbers: data.mobileNumbers, 
               updated: new Date().toLocaleDateString('en-GB')
             } : ledger
           );
@@ -116,7 +128,10 @@ export default function AddLedger() {
             branchAddress: data.branchAddress || '',
             branchState: data.branchState || '',
             branchPincode: data.branchPincode || '',
-            mobileNumbers: data.mobileNumbers, // 👈 Save to local storage
+            bankName: data.bankName,
+            ifscCode: data.ifscCode,
+            accountNumber: data.accountNumber,
+            mobileNumbers: data.mobileNumbers, 
             updated: new Date().toLocaleDateString('en-GB'),
             by: 'Admin User',
             sync: 'Success'
@@ -210,14 +225,13 @@ export default function AddLedger() {
               <input {...register("whatsapp")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" />
             </div>
 
-            {/* DYNAMIC FIELD ARRAY FOR MOBILE NUMBERS */}
             <div className="col-span-1 md:col-span-2 mt-2 p-4 bg-slate-50 border border-slate-200 rounded-lg">
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-semibold text-slate-700">Mobile Numbers</label>
                 <button 
                   type="button" 
                   onClick={() => appendMobile({ number: '' })} 
-                  className="text-xs text-emerald-600 hover:text-emerald-800 flex items-center font-bold"
+                  className="text-xs text-emerald-600 hover:text-emerald-800 flex items-center font-bold cursor-pointer"
                 >
                   <Plus size={14} className="mr-1" /> Add Another Mobile
                 </button>
@@ -235,7 +249,7 @@ export default function AddLedger() {
                       <button 
                         type="button" 
                         onClick={() => removeMobile(index)} 
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
                         title="Remove Number"
                       >
                         <Trash2 size={18} />
@@ -245,7 +259,28 @@ export default function AddLedger() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
 
+        {/* 🌟 NEW: BANK DETAILS SECTION 🌟 */}
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+          <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
+            <Landmark className="text-emerald-600 mr-2" size={20} />
+            <h2 className="text-lg font-semibold text-slate-800">Bank Account Details</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Bank Name</label>
+              <input {...register("bankName")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" placeholder="e.g. HDFC Bank" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Account Number</label>
+              <input {...register("accountNumber")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" placeholder="e.g. 50100123456" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">IFSC Code</label>
+              <input {...register("ifscCode")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" placeholder="e.g. HDFC0001234" />
+            </div>
           </div>
         </div>
 
