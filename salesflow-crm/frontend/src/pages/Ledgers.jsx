@@ -6,11 +6,24 @@ export default function Ledgers() {
   const navigate = useNavigate();
   const [ledgers, setLedgers] = useState([]);
   const [selectedLedger, setSelectedLedger] = useState(null);
+ 
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const savedData = JSON.parse(localStorage.getItem('salesflow_ledgers')) || [];
     setLedgers(savedData);
   }, []);
+
+  const filteredLedgers = ledgers.filter((ledger) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      ledger.partyName?.toLowerCase().includes(searchLower) ||
+      ledger.email?.toLowerCase().includes(searchLower) ||
+      ledger.whatsapp?.toLowerCase().includes(searchLower) ||
+      ledger.type?.toLowerCase().includes(searchLower) ||
+      ledger.address?.toLowerCase().includes(searchLower)
+    );
+  });
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200">
@@ -21,7 +34,15 @@ export default function Ledgers() {
         <div className="flex items-center space-x-3">
           <div className="flex items-center border border-slate-300 rounded-md px-3 py-2 bg-slate-50">
             <Search size={18} className="text-slate-400 mr-2" />
-            <input type="text" placeholder="Search ledgers..." className="bg-transparent outline-none text-sm w-48" />
+            <input 
+              type="text" 
+              name="searchLedgers"
+              id="searchLedgers"
+              placeholder="Search ledgers..." 
+              className="bg-transparent outline-none text-sm w-48" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
 
           <button
@@ -51,14 +72,16 @@ export default function Ledgers() {
             </tr>
           </thead>
           <tbody>
-            {ledgers.length === 0 ? (
+            {filteredLedgers.length === 0 ? (
               <tr>
                 <td colSpan="9" className="p-8 text-center text-slate-500">
-                  No ledgers found. Click 'New Ledger' to create one.
+                  {searchTerm 
+                    ? `No ledgers found matching "${searchTerm}".` 
+                    : "No ledgers found. Click 'New Ledger' to create one."}
                 </td>
               </tr>
             ) : (
-              ledgers.map((ledger) => (
+              filteredLedgers.map((ledger) => (
                 <tr key={ledger.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="p-4 font-medium text-slate-800">{ledger.partyName}</td>
                   <td className="p-4"><span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-medium">{ledger.type}</span></td>
@@ -73,7 +96,7 @@ export default function Ledgers() {
                   <td className="p-4 flex items-center space-x-2 text-slate-400">
                     <button
                       onClick={() => navigate('/ledgers/new', { state: { ledgerData: ledger } })}
-                      className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
+                      className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
                       title="Edit Ledger"
                     >
                       <Edit2 size={16} />
@@ -102,7 +125,7 @@ export default function Ledgers() {
               <h2 className="text-xl font-bold text-slate-800">Ledger Details</h2>
               <button
                 onClick={() => setSelectedLedger(null)}
-                className="p-2 text-slate-400 hover:text-red-500 rounded-full hover:bg-slate-50 transition-colors"
+                className="p-2 text-slate-400 hover:text-red-500 rounded-full hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -181,40 +204,6 @@ export default function Ledgers() {
                   </div>
                 </div>
               )}
-
-              {/* 🌟 NEW: BANK DETAILS SECTION IN VIEW MODAL 🌟 */}
-              <div>
-                <h3 className="text-sm font-semibold text-emerald-600 uppercase tracking-wider mb-3">Bank Details</h3>
-
-                {selectedLedger.bankDetails && selectedLedger.bankDetails.length > 0 ? (
-                  <div className="space-y-4">
-                    {selectedLedger.bankDetails.map((bank, index) => (
-                      <div key={index} className="relative grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8 bg-slate-50 p-4 rounded-lg border border-slate-100 mt-2">
-                        <span className="absolute -top-2.5 left-4 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
-                          {index === 0 ? "Primary Bank" : `Secondary Bank ${index}`}
-                        </span>
-                        <div>
-                          <p className="text-xs text-slate-500 mb-1">Bank Name</p>
-                          <p className="text-sm font-medium text-slate-800">{bank.bankName || '-'}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-500 mb-1">Account Number</p>
-                          <p className="text-sm font-medium text-slate-800">{bank.accountNumber || '-'}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-500 mb-1">IFSC Code</p>
-                          <p className="text-sm font-medium text-slate-800">{bank.ifscCode || '-'}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm text-slate-500 italic">
-                    No bank details provided.
-                  </div>
-                )}
-              </div>
-
             </div>
           </div>
         </div>
