@@ -179,20 +179,34 @@ export default function Ledgers() {
               {/* 🌟 NEW: BANK DETAILS SECTION IN VIEW MODAL 🌟 */}
               <div>
                 <h3 className="text-sm font-semibold text-emerald-600 uppercase tracking-wider mb-3">Bank Details</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Bank Name</p>
-                    <p className="text-sm font-medium text-slate-800">{selectedLedger.bankName || '-'}</p>
+                
+                {selectedLedger.bankDetails && selectedLedger.bankDetails.length > 0 ? (
+                  <div className="space-y-4">
+                    {selectedLedger.bankDetails.map((bank, index) => (
+                      <div key={index} className="relative grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8 bg-slate-50 p-4 rounded-lg border border-slate-100 mt-2">
+                        <span className="absolute -top-2.5 left-4 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-emerald-200">
+                          {index === 0 ? "Primary Bank" : `Secondary Bank ${index}`}
+                        </span>
+                        <div>
+                          <p className="text-xs text-slate-500 mb-1">Bank Name</p>
+                          <p className="text-sm font-medium text-slate-800">{bank.bankName || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500 mb-1">Account Number</p>
+                          <p className="text-sm font-medium text-slate-800">{bank.accountNumber || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500 mb-1">IFSC Code</p>
+                          <p className="text-sm font-medium text-slate-800">{bank.ifscCode || '-'}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">Account Number</p>
-                    <p className="text-sm font-medium text-slate-800">{selectedLedger.accountNumber || '-'}</p>
+                ) : (
+                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm text-slate-500 italic">
+                    No bank details provided.
                   </div>
-                  <div>
-                    <p className="text-xs text-slate-500 mb-1">IFSC Code</p>
-                    <p className="text-sm font-medium text-slate-800">{selectedLedger.ifscCode || '-'}</p>
-                  </div>
-                </div>
+                )}
               </div>
 
             </div>

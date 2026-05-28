@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form'; 
-import { ArrowLeft, Save, Building2, User, Plus, Trash2, Landmark } from 'lucide-react'; // Added Landmark for Bank
+import { ArrowLeft, Save, Building2, User, Plus, Trash2, Landmark } from 'lucide-react';
 
 export default function AddLedger() {
   const navigate = useNavigate();
@@ -26,11 +26,9 @@ export default function AddLedger() {
       branchAddress: ledgerData?.branchAddress || '',
       branchState: ledgerData?.branchState || '',
       branchPincode: ledgerData?.branchPincode || '',
-      // 👇 New Bank Fields
-      bankName: ledgerData?.bankName || '',
-      ifscCode: ledgerData?.ifscCode || '',
-      accountNumber: ledgerData?.accountNumber || '',
-      mobileNumbers: ledgerData?.mobileNumbers?.length ? ledgerData.mobileNumbers : [{ number: '' }] 
+      mobileNumbers: ledgerData?.mobileNumbers?.length ? ledgerData.mobileNumbers : [{ number: '' }],
+      // 👇 New Array for Multiple Bank Details
+      bankDetails: ledgerData?.bankDetails?.length ? ledgerData.bankDetails : [{ bankName: '', accountNumber: '', ifscCode: '' }]
     }
   });
 
@@ -39,15 +37,19 @@ export default function AddLedger() {
     name: "mobileNumbers"
   });
 
+  // 👇 Dynamic Form Array logic for Bank Details
+  const { fields: bankFields, append: appendBank, remove: removeBank } = useFieldArray({
+    control,
+    name: "bankDetails"
+  });
+
   useEffect(() => {
     if (ledgerData) {
       reset({ 
         ...ledgerData, 
         pinCode: ledgerData.pin,
-        bankName: ledgerData.bankName || '',
-        ifscCode: ledgerData.ifscCode || '',
-        accountNumber: ledgerData.accountNumber || '',
-        mobileNumbers: ledgerData.mobileNumbers?.length ? ledgerData.mobileNumbers : [{ number: '' }]
+        mobileNumbers: ledgerData.mobileNumbers?.length ? ledgerData.mobileNumbers : [{ number: '' }],
+        bankDetails: ledgerData.bankDetails?.length ? ledgerData.bankDetails : [{ bankName: '', accountNumber: '', ifscCode: '' }]
       }); 
     }
   }, [ledgerData, reset]);
@@ -75,67 +77,45 @@ export default function AddLedger() {
           branchPincode: data.branchPincode || '',
           whatsapp: data.whatsapp || '',
           mobileNumbers: data.mobileNumbers || [],
-          // 👇 Sending Bank Details to server.js
-          bankName: data.bankName,
-          ifscCode: data.ifscCode,
-          accountNumber: data.accountNumber
+          // 👇 Sending the array of banks to server.js
+          bankDetails: data.bankDetails || []
         })
       });
 
       if (response.ok) {
         const existingLedgers = JSON.parse(localStorage.getItem('salesflow_ledgers')) || [];
 
+        const newLedgerItem = {
+          id: isEditing ? ledgerData.id : `LDG-${Date.now()}`,
+          partyName: data.partyName,
+          type: data.partyType,
+          address: data.address || '-',
+          state: data.state || '',
+          pin: data.pinCode || '-',
+          city: data.city || '',
+          email: data.email || '-',
+          whatsapp: data.whatsapp || '-',
+          contactName: data.contactName || '',
+          designation: data.designation || '',
+          branchName: data.branchName || '',
+          branchAddress: data.branchAddress || '',
+          branchState: data.branchState || '',
+          branchPincode: data.branchPincode || '',
+          mobileNumbers: data.mobileNumbers, 
+          bankDetails: data.bankDetails, // Save array locally
+          updated: new Date().toLocaleDateString('en-GB'),
+          by: 'Admin User',
+          sync: 'Success'
+        };
+
         if (isEditing) {
           const updatedLedgers = existingLedgers.map((ledger) =>
-            ledger.id === ledgerData.id ? {
-              ...ledger,
-              type: data.partyType,
-              address: data.address || '-',
-              state: data.state || '',
-              pin: data.pinCode || '-',
-              city: data.city || '',
-              email: data.email || '-',
-              whatsapp: data.whatsapp || '-',
-              contactName: data.contactName || '',
-              designation: data.designation || '',
-              branchName: data.branchName || '',
-              branchAddress: data.branchAddress || '',
-              branchState: data.branchState || '',
-              branchPincode: data.branchPincode || '',
-              bankName: data.bankName,
-              ifscCode: data.ifscCode,
-              accountNumber: data.accountNumber,
-              mobileNumbers: data.mobileNumbers, 
-              updated: new Date().toLocaleDateString('en-GB')
-            } : ledger
+            ledger.id === ledgerData.id ? newLedgerItem : ledger
           );
           localStorage.setItem('salesflow_ledgers', JSON.stringify(updatedLedgers));
           setStatus('✅ Ledger successfully updated in Tally!');
         } else {
-          existingLedgers.push({
-            id: `LDG-${Date.now()}`,
-            partyName: data.partyName,
-            type: data.partyType,
-            address: data.address || '-',
-            state: data.state || '',
-            pin: data.pinCode || '-',
-            city: data.city || '',
-            email: data.email || '-',
-            whatsapp: data.whatsapp || '-',
-            contactName: data.contactName || '',
-            designation: data.designation || '',
-            branchName: data.branchName || '',
-            branchAddress: data.branchAddress || '',
-            branchState: data.branchState || '',
-            branchPincode: data.branchPincode || '',
-            bankName: data.bankName,
-            ifscCode: data.ifscCode,
-            accountNumber: data.accountNumber,
-            mobileNumbers: data.mobileNumbers, 
-            updated: new Date().toLocaleDateString('en-GB'),
-            by: 'Admin User',
-            sync: 'Success'
-          });
+          existingLedgers.push(newLedgerItem);
           localStorage.setItem('salesflow_ledgers', JSON.stringify(existingLedgers));
           setStatus('✅ Ledger successfully synced to Tally!');
         }
@@ -262,25 +242,54 @@ export default function AddLedger() {
           </div>
         </div>
 
-        {/* 🌟 NEW: BANK DETAILS SECTION 🌟 */}
+        {/*  BANK DETAILS SECTION (DYNAMIC ARRAY)  */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-          <div className="flex items-center mb-6 pb-4 border-b border-slate-100">
-            <Landmark className="text-emerald-600 mr-2" size={20} />
-            <h2 className="text-lg font-semibold text-slate-800">Bank Account Details</h2>
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+            <div className="flex items-center">
+              <Landmark className="text-emerald-600 mr-2" size={20} />
+              <h2 className="text-lg font-semibold text-slate-800">Bank Account Details</h2>
+            </div>
+            <button 
+              type="button" 
+              onClick={() => appendBank({ bankName: '', accountNumber: '', ifscCode: '' })} 
+              className="text-xs text-emerald-600 hover:text-emerald-800 flex items-center font-bold cursor-pointer"
+            >
+              <Plus size={14} className="mr-1" /> Add Another Bank
+            </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Bank Name</label>
-              <input {...register("bankName")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" placeholder="e.g. HDFC Bank" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Account Number</label>
-              <input {...register("accountNumber")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" placeholder="e.g. 50100123456" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">IFSC Code</label>
-              <input {...register("ifscCode")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" placeholder="e.g. HDFC0001234" />
-            </div>
+          
+          <div className="space-y-6">
+            {bankFields.map((field, index) => (
+              <div key={field.id} className="relative bg-slate-50 p-4 rounded-lg border border-slate-100">
+                {index > 0 && (
+                  <button 
+                    type="button" 
+                    onClick={() => removeBank(index)} 
+                    className="absolute top-2 right-2 p-1.5 text-red-500 hover:bg-red-100 rounded-md transition-colors cursor-pointer"
+                    title="Remove Bank"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                  {index === 0 ? "Primary Bank Account" : `Secondary Bank Account ${index}`}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Bank Name</label>
+                    <input {...register(`bankDetails.${index}.bankName`)} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500 bg-white" placeholder="e.g. HDFC Bank" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Account Number</label>
+                    <input {...register(`bankDetails.${index}.accountNumber`)} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500 bg-white" placeholder="e.g. 50100123456" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">IFSC Code</label>
+                    <input {...register(`bankDetails.${index}.ifscCode`)} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500 bg-white" placeholder="e.g. HDFC0001234" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
