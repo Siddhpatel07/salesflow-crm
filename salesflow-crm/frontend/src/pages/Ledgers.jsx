@@ -89,13 +89,9 @@ export default function Ledgers() {
                   </td>
                 </tr>
               ))
-
             )}
-
           </tbody>
-
         </table>
-
       </div>
 
       {/* --- VIEW DETAILS MODAL --- */}
@@ -179,6 +175,26 @@ export default function Ledgers() {
                   </div>
                 </div>
               )}
+
+              {/* 🌟 NEW: BANK DETAILS SECTION IN VIEW MODAL 🌟 */}
+              <div>
+                <h3 className="text-sm font-semibold text-emerald-600 uppercase tracking-wider mb-3">Bank Details</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8 bg-slate-50 p-4 rounded-lg border border-slate-100">
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Bank Name</p>
+                    <p className="text-sm font-medium text-slate-800">{selectedLedger.bankName || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">Account Number</p>
+                    <p className="text-sm font-medium text-slate-800">{selectedLedger.accountNumber || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">IFSC Code</p>
+                    <p className="text-sm font-medium text-slate-800">{selectedLedger.ifscCode || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
