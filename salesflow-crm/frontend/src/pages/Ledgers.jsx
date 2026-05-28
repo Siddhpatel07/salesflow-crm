@@ -144,11 +144,17 @@ export default function Ledgers() {
                   <div>
                     <p className="text-xs text-slate-500 mb-1">Phone Numbers</p>
                     {selectedLedger.mobileNumbers && selectedLedger.mobileNumbers.length > 0 ? (
-                      selectedLedger.mobileNumbers.map((m, idx) => (
-                        <p key={idx} className="text-sm font-medium text-slate-700">
-                          {m.number} {idx === 0 && <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1 rounded ml-1">Primary</span>}
-                        </p>
-                      ))
+                      <div className="space-y-1">
+                        {selectedLedger.mobileNumbers.map((m, idx) => (
+                          <div key={idx} className="flex items-center">
+                            <p className="text-sm font-medium text-slate-700">
+                              {idx > 0 && m.name ? <span className="text-slate-500 font-normal mr-1">{m.name}:</span> : null}
+                              {m.number}
+                            </p>
+                            {idx === 0 && <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1 rounded ml-2 border border-emerald-100">Primary</span>}
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <p className="text-sm text-slate-700">{selectedLedger.phone || '-'}</p>
                     )}
@@ -179,7 +185,7 @@ export default function Ledgers() {
               {/* 🌟 NEW: BANK DETAILS SECTION IN VIEW MODAL 🌟 */}
               <div>
                 <h3 className="text-sm font-semibold text-emerald-600 uppercase tracking-wider mb-3">Bank Details</h3>
-                
+
                 {selectedLedger.bankDetails && selectedLedger.bankDetails.length > 0 ? (
                   <div className="space-y-4">
                     {selectedLedger.bankDetails.map((bank, index) => (

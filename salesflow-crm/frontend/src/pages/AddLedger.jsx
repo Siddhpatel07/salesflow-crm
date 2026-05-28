@@ -90,6 +90,8 @@ export default function AddLedger() {
           branchState: data.branchState || '',
           branchPincode: data.branchPincode || '',
           whatsapp: data.whatsapp || '',
+          contactName: data.contactName || '',
+          designation: data.designation || '',
           mobileNumbers: data.mobileNumbers || [],
           bankDetails: data.bankDetails || []
         })
@@ -217,32 +219,44 @@ export default function AddLedger() {
               <input {...register("whatsapp")} className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500" />
             </div>
 
+            {/*  UPDATED: SMART CONTACT PERSONS & MOBILE NUMBERS ARRAY */}
             <div className="col-span-1 md:col-span-2 mt-2 p-4 bg-slate-50 border border-slate-200 rounded-lg">
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-semibold text-slate-700">Mobile Numbers</label>
                 <button 
                   type="button" 
-                  onClick={() => appendMobile({ number: '' })} 
+                  onClick={() => appendMobile({ name: '', number: '' })} 
                   className="text-xs text-emerald-600 hover:text-emerald-800 flex items-center font-bold cursor-pointer"
                 >
-                  <Plus size={14} className="mr-1" /> Add Another Mobile
+                  <Plus size={14} className="mr-1" /> Add Another Contact
                 </button>
               </div>
               
               <div className="space-y-3">
                 {mobileFields.map((field, index) => (
-                  <div key={field.id} className="flex items-center space-x-2">
+                  <div key={field.id} className={`flex items-center space-x-2 ${index > 0 ? 'bg-white p-2 rounded-md border border-slate-100 shadow-sm' : ''}`}>
+                    
+                    
+                    {index > 0 && (
+                      <input 
+                        {...register(`mobileNumbers.${index}.name`)} 
+                        className="w-1/2 p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500 bg-white text-sm" 
+                        placeholder="Contact Name" 
+                      />
+                    )}
+                    
                     <input 
                       {...register(`mobileNumbers.${index}.number`)} 
-                      className="w-full p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500 bg-white" 
-                      placeholder={index === 0 ? "Primary Mobile Number" : `Secondary Mobile ${index}`} 
+                      className={`${index > 0 ? 'w-1/2 text-sm' : 'w-full'} p-2 border border-slate-300 rounded-md outline-none focus:border-emerald-500 bg-white`} 
+                      placeholder={index === 0 ? "Primary Mobile Number" : "Mobile Number"} 
                     />
+                    
                     {index > 0 && (
                       <button 
                         type="button" 
                         onClick={() => removeMobile(index)} 
                         className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
-                        title="Remove Number"
+                        title="Remove Contact"
                       >
                         <Trash2 size={18} />
                       </button>

@@ -20,33 +20,47 @@ const buildTallyPayload = (action, data) => {
     branchState,
     branchPincode,
     whatsapp,
+    contactName,
     mobileNumbers,
-    bankDetails // 👈 Frontend se aane wala multiple banks ka array
+    bankDetails
   } = data;
 
   // Contact Details Mapping
   const contactDetailsArray = mobileNumbers && mobileNumbers.length > 0
-    ? mobileNumbers.map((m, index) => ({
-        name: index === 0 ? "Primary Contact" : `Secondary ${index}`,
-        phonenumber: m.number,
-        countryisdcode: "+91",
-        isdefaultwhatsappnum: index === 0 ? "Yes" : "No"
-      }))
-    : [];
+    ? mobileNumbers
+      .filter(m => m.number) 
+      .map((m, index) => {
 
-  // 👇 STRICTLY FOLLOWING SENIOR'S FORMAT FOR PAYMENT DETAILS
+        let contactPersonName = "";
+
+        if (index === 0) {
+
+          contactPersonName = contactName ? contactName : "Primary Contact";
+        } else {
+          contactPersonName = m.name ? m.name.trim() : `Secondary Contact ${index}`;
+        }
+
+        return {
+          name: contactPersonName,
+          phonenumber: m.number,
+          countryisdcode: "+91",
+          isdefaultwhatsappnum: index === 0 ? "Yes" : "No"
+        };
+      })
+    : [];
+  // BANK PAYMENT DETAILS
   const paymentDetailsArray = bankDetails && bankDetails.length > 0
     ? bankDetails
-        .filter(bank => bank.bankName || bank.accountNumber || bank.ifscCode) // Khali row filter karne ke liye
-        .map((bank, index) => ({
-          transactionname: index === 0 ? "Primary" : (index === 1 ? "Secondary" : `Secondary ${index}`),
-          bankname: bank.bankName || "",
-          ifscode: bank.ifscCode || "",
-          accountnumber: bank.accountNumber || "",
-          paymentfavouring: name, // Senior ke json me party ka naam hai yahan
-          setasdefault: index === 0 ? "Yes" : "No",
-          defaulttransactiontype: "Inter Bank Transfer" // Senior ke format ke mutabik fixed
-        }))
+      .filter(bank => bank.bankName || bank.accountNumber || bank.ifscCode) // Khali row filter karne ke liye
+      .map((bank, index) => ({
+        transactionname: index === 0 ? "Primary" : (index === 1 ? "Secondary" : `Secondary ${index}`),
+        bankname: bank.bankName || "",
+        ifscode: bank.ifscCode || "",
+        accountnumber: bank.accountNumber || "",
+        paymentfavouring: name, // Senior ke json me party ka naam hai yahan
+        setasdefault: index === 0 ? "Yes" : "No",
+        defaulttransactiontype: "Inter Bank Transfer" // Senior ke format ke mutabik fixed
+      }))
     : [];
 
   // Ensure address is an array
@@ -68,17 +82,18 @@ const buildTallyPayload = (action, data) => {
         name: name,
         parent: partyType,
         email: email,
+        ledgercontact: contactName || "",
         ledgermobile: mobileNumbers?.[0]?.number || "",
         defaultwhatsappno: whatsapp || mobileNumbers?.[0]?.number || "",
         address: addressLines.length > 0 ? addressLines : [address || ""],
         statename: state,
         countryname: "India",
         pincode: pinCode,
-        
+
         // Arrays going to Tally
         contactdetails: contactDetailsArray,
         paymentdetails: paymentDetailsArray, // 👈 Naya array exactly senior format me
-        
+
         hasmultipleaddresses: branchName ? "Yes" : "No"
       }
     ]
@@ -113,7 +128,7 @@ const buildTallyPayload = (action, data) => {
 app.post('/api/tally/sync', async (req, res) => {
   console.log(`[CREATE] Data received from React: ${req.body.name}`);
   const jsonPayload = buildTallyPayload("Create", req.body);
-  
+
   console.log("--- EXACT JSON GOING TO TALLY ---");
   console.log(JSON.stringify(jsonPayload, null, 2));
   console.log("-----------------------------------------");
